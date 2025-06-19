@@ -1,5 +1,4 @@
-﻿
-using CadastroAluno;
+﻿using CadastroAluno;
 
 class Program
 {
@@ -17,19 +16,21 @@ class Program
             ███████║███████╗██║ ╚████║██║  ██║╚██████╗
             ╚══════╝╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝        
                C A D A S T R O   D E   A L U N O S
-            ");
+        ");
+
         while (true)
         {
-
             Console.WriteLine("\nEscolha uma opção:");
             Console.WriteLine("1 - Adicionar aluno");
             Console.WriteLine("2 - Remover aluno (por CPF)");
-            Console.WriteLine("3 - Listar alunos");
-            Console.WriteLine("4 - Sair");
+            Console.WriteLine("3 - Listar alunos (ordenar por Nome ou Idade)");
+            Console.WriteLine("4 - Filtrar alunos por letra inicial");
+            Console.WriteLine("5 - Buscar aluno por CPF");
+            Console.WriteLine("6 - Sair");
             Console.Write("Opção: ");
             entrada = Console.ReadLine();
 
-            if (entrada == "4" || entrada?.ToLower() == "sair")
+            if (entrada == "6" || entrada?.ToLower() == "sair")
                 break;
 
             switch (entrada)
@@ -58,21 +59,26 @@ class Program
                         break;
                     }
 
-                    // Verifica se o CPF já existe
                     if (alunos.Exists(a => a.Cpf == cpf))
                     {
                         Console.WriteLine("Já existe um aluno com esse CPF.");
                         break;
                     }
 
-                    alunos.Add(new Aluno { Nome = nome, Idade = idade, Cpf = cpf });
+                    alunos.Add(new Aluno 
+                    { 
+                        Nome = nome, 
+                        Idade = idade, 
+                        Cpf = cpf ,
+                        Matricula = Guid.NewGuid()
+                    });
                     Console.WriteLine("Aluno adicionado com sucesso!");
                     break;
 
                 case "2":
                     Console.Write("Digite o CPF do aluno a ser removido: ");
                     string cpfRemover = Console.ReadLine() ?? "";
-                    Aluno? alunoRemover = alunos.Find(a => a.Cpf == cpfRemover);
+                    var alunoRemover = alunos.FirstOrDefault(a => a.Cpf == cpfRemover);
                     if (alunoRemover != null)
                     {
                         alunos.Remove(alunoRemover);
@@ -85,10 +91,80 @@ class Program
                     break;
 
                 case "3":
-                    Console.WriteLine("\nLista de alunos:");
-                    foreach (var aluno in alunos)
+                    Console.Write("Ordenar por nome(n) ou idade(i)? ");
+                    string criterio = Console.ReadLine()?.ToLower() ?? "n";
+                    IEnumerable<Aluno> ordenados = criterio == "i"
+                        ? alunos.OrderBy(a => a.Idade)
+                        : alunos.OrderBy(a => a.Nome);
+
+                    var listaResponse = ordenados
+                        .Select(a => new AlunoResponse 
+                        { 
+                            Nome = a.Nome,
+                            Idade = a.Idade
+                        });
+
+                    Console.WriteLine("\nAlunos cadastrados:");
+                    foreach (var a in listaResponse)
+                        Console.WriteLine($"Nome: {a.Nome} | Idade: {a.Idade}");
+                    break;
+
+                case "4":
+                    Console.Write("Digite a letra inicial: ");
+                    string letra = Console.ReadLine()?.ToUpper() ?? "";
+                    if (letra.Length != 1)
                     {
-                        Console.WriteLine($"Nome: {aluno.Nome} | Idade: {aluno.Idade}");
+                        Console.WriteLine("Entrada inválida.");
+                        break;
+                    }
+
+                    var filtrados = alunos
+                        .Where(a => a.Nome.ToUpper().StartsWith(letra))
+                        .Select(a => new AlunoResponse 
+                        { 
+                            Nome = a.Nome, 
+                            Idade = a.Idade,
+                        })
+                        .ToList();
+
+                    if (filtrados.Count == 0)
+                    {
+                        Console.WriteLine("Nenhum aluno encontrado com essa letra.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nAlunos filtrados:");
+                        foreach (var a in filtrados)
+                            Console.WriteLine($"Nome: {a.Nome} | Idade: {a.Idade}");
+                    }
+                    break;
+
+                case "5":
+                    Console.Write("Digite o CPF: ");
+                    string cpfBusca = Console.ReadLine() ?? "";
+
+                    var alunoDetalhado = alunos
+                        .Where(a => a.Cpf == cpfBusca)
+                        .Select(a => new AlunoDetalhadoResponse
+                        {
+                            Nome = a.Nome,
+                            Idade = a.Idade,
+                            Cpf = a.Cpf,
+                            Matricula = a.Matricula
+                        })
+                        .FirstOrDefault();
+
+                    if (alunoDetalhado == null)
+                    {
+                        Console.WriteLine("Aluno não encontrado.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nAluno encontrado:");
+                        Console.WriteLine($"Nome: {alunoDetalhado.Nome}");
+                        Console.WriteLine($"Idade: {alunoDetalhado.Idade}");
+                        Console.WriteLine($"CPF: {alunoDetalhado.Cpf}");
+                        Console.WriteLine($"Matrícula: {alunoDetalhado.Matricula}");
                     }
                     break;
 
